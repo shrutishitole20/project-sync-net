@@ -30,7 +30,7 @@ const Auth = () => {
       if (error) throw error;
 
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      navigate('/dashboard', { state: { justSignedIn: true } });
     } catch (error: any) {
       toast.error(error.message || 'Error signing in');
     } finally {
@@ -57,7 +57,7 @@ const Auth = () => {
       if (error) throw error;
 
       toast.success('Account created! Redirecting...');
-      navigate('/dashboard');
+      navigate('/dashboard', { state: { justSignedIn: true } });
     } catch (error: any) {
       toast.error(error.message || 'Error creating account');
     } finally {
