@@ -1,9 +1,11 @@
 import { ReactNode, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Chatbot } from '@/components/chat/Chatbot';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -12,12 +14,21 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation() as { state?: { justSignedIn?: boolean } } & Location;
 
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    if (user && location.state?.justSignedIn) {
+      const name = (user.user_metadata as any)?.full_name || user.email || 'there';
+      toast.success(`Welcome, ${name}!`);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [user, location, navigate]);
 
   if (loading) {
     return (
@@ -41,6 +52,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </header>
           <div className="p-6">{children}</div>
         </main>
+        <Chatbot />
       </div>
     </SidebarProvider>
   );
