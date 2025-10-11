@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Rocket } from 'lucide-react';
+import { Loader2, Rocket, Eye, EyeOff, Github, Chrome } from 'lucide-react';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -15,6 +15,7 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +28,7 @@ const Auth = () => {
       });
 
       if (error) throw error;
-      
+
       toast.success('Welcome back!');
       navigate('/dashboard');
     } catch (error: any) {
@@ -61,6 +62,38 @@ const Auth = () => {
       toast.error(error.message || 'Error creating account');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!email) {
+      toast.error('Enter your email to reset password');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      if (error) throw error;
+      toast.success('Password reset email sent');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset email');
+    }
+  };
+
+  const handleOAuth = async (provider: 'github' | 'google') => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: provider === 'google' ? { access_type: 'offline', prompt: 'consent' } : {},
+        },
+      });
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      toast.error(error.message || 'OAuth sign-in failed');
     }
   };
 
@@ -106,15 +139,33 @@ const Auth = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signin-password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowPassword((s) => !s)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Forgot your password?</span>
+                    <button type="button" onClick={handleResetPassword} className="text-primary hover:underline">
+                      Reset
+                    </button>
+                  </div>
+
                   <Button
                     type="submit"
                     className="w-full"
@@ -129,6 +180,15 @@ const Auth = () => {
                       'Sign In'
                     )}
                   </Button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button type="button" variant="outline" onClick={() => handleOAuth('google')}>
+                      <Chrome className="mr-2 h-4 w-4" /> Google
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => handleOAuth('github')}>
+                      <Github className="mr-2 h-4 w-4" /> GitHub
+                    </Button>
+                  </div>
                 </form>
               </TabsContent>
 
@@ -160,7 +220,7 @@ const Auth = () => {
                     <Label htmlFor="signup-password">Password</Label>
                     <Input
                       id="signup-password"
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -182,6 +242,15 @@ const Auth = () => {
                       'Create Account'
                     )}
                   </Button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button type="button" variant="outline" onClick={() => handleOAuth('google')}>
+                      <Chrome className="mr-2 h-4 w-4" /> Google
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => handleOAuth('github')}>
+                      <Github className="mr-2 h-4 w-4" /> GitHub
+                    </Button>
+                  </div>
                 </form>
               </TabsContent>
             </Tabs>
