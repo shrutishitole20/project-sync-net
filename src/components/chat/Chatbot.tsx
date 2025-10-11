@@ -184,13 +184,13 @@ export function Chatbot() {
             </ScrollArea>
             <div className="flex items-center gap-2 p-3 border-t">
               <Input
-                placeholder={user ? 'Type a message…' : 'Sign in to chat'}
+                placeholder='Type a message…'
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') onSend(); }}
-                disabled={busy || !user}
+                disabled={busy}
               />
-              <Button onClick={onSend} disabled={busy || !user}>
+              <Button onClick={onSend} disabled={busy}>
                 <Send className="h-4 w-4" />
               </Button>
             </div>
