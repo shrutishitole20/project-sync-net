@@ -5,6 +5,7 @@ import { AppSidebar } from './AppSidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Chatbot } from '@/components/chat/Chatbot';
 
 interface DashboardLayoutProps {
   children: ReactNode;
