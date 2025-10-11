@@ -21,7 +21,7 @@ const helpText = `I can help with:
 • create project <title> [due YYYY-MM-DD]
 • set status <project title> to <planning|active|on_hold|completed>
 • set progress <project title> to <0-100>
-�� overdue tasks
+• overdue tasks
 • help`;
 
 export function Chatbot() {
