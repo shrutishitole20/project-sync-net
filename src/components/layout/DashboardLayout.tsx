@@ -52,8 +52,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </header>
           <div className="p-6">{children}</div>
         </main>
-        {/* Assistant floating widget */}
-
+        <Chatbot />
       </div>
     </SidebarProvider>
   );
