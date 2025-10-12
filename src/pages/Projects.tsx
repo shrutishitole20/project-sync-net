@@ -14,7 +14,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+<<<<<<< HEAD
 import { Plus, RefreshCcw } from 'lucide-react';
+=======
+import { Plus, RefreshCcw, FileText } from 'lucide-react';
+import { ProjectTemplateSelector } from '@/components/ProjectTemplateSelector';
+>>>>>>> 1310239 (Added local VS Code project files)
 import type { Enums, Tables } from '@/integrations/supabase/types';
 
 const statusVariants: Record<Enums<'project_status'>, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -103,6 +108,58 @@ export default function Projects() {
     refetch();
   };
 
+<<<<<<< HEAD
+=======
+  const createProjectFromTemplate = async (template: any) => {
+    try {
+      // Create the project
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .insert({
+          title: template.name,
+          description: template.description,
+          manager_id: user?.id ?? null,
+          progress: 0,
+          status: 'planning',
+        })
+        .select()
+        .single();
+
+      if (projectError) {
+        toast.error('Failed to create project');
+        return;
+      }
+
+      // Create tasks from template
+      if (template.tasks && template.tasks.length > 0) {
+        const tasksToInsert = template.tasks.map((task: any) => ({
+          project_id: project.id,
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          status: 'todo',
+          created_by: user?.id!,
+        }));
+
+        const { error: tasksError } = await supabase
+          .from('tasks')
+          .insert(tasksToInsert);
+
+        if (tasksError) {
+          toast.error('Project created but failed to add tasks');
+          return;
+        }
+      }
+
+      toast.success('Project created from template successfully');
+      refetch();
+    } catch (error) {
+      toast.error('Failed to create project from template');
+      console.error('Template project creation error:', error);
+    }
+  };
+
+>>>>>>> 1310239 (Added local VS Code project files)
   const updateProject = async (id: string, updates: Partial<Tables<'projects'>>) => {
     const { error } = await supabase.from('projects').update(updates).eq('id', id);
     if (error) toast.error(error.message);
@@ -141,6 +198,14 @@ export default function Projects() {
             <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
               <RefreshCcw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
             </Button>
+<<<<<<< HEAD
+=======
+            <ProjectTemplateSelector onTemplateSelect={createProjectFromTemplate}>
+              <Button variant="outline">
+                <FileText className="mr-2 h-4 w-4" /> From Template
+              </Button>
+            </ProjectTemplateSelector>
+>>>>>>> 1310239 (Added local VS Code project files)
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button>

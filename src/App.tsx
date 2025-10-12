@@ -9,6 +9,11 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Tasks from "./pages/Tasks";
 import Notifications from "./pages/Notifications";
+<<<<<<< HEAD
+=======
+import Team from "./pages/Team";
+import Analytics from "./pages/Analytics";
+>>>>>>> 1310239 (Added local VS Code project files)
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +31,11 @@ const App = () => (
           <Route path="/projects" element={<Projects />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/notifications" element={<Notifications />} />
+<<<<<<< HEAD
+=======
+          <Route path="/team" element={<Team />} />
+          <Route path="/analytics" element={<Analytics />} />
+>>>>>>> 1310239 (Added local VS Code project files)
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
