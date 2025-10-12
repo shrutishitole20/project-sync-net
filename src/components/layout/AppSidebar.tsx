@@ -4,13 +4,10 @@ import {
   FolderKanban,
   CheckSquare,
   Bell,
-<<<<<<< HEAD
-=======
   Users,
   BarChart3,
   Search,
   MessageCircle,
->>>>>>> 1310239 (Added local VS Code project files)
   LogOut,
   Rocket,
 } from 'lucide-react';
@@ -27,36 +24,24 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-<<<<<<< HEAD
-import { useAuth } from '@/hooks/useAuth';
-=======
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdvancedSearch } from '@/components/AdvancedSearch';
 import { TeamChat } from '@/components/TeamChat';
->>>>>>> 1310239 (Added local VS Code project files)
 
 const navigation = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
   { title: 'Projects', url: '/projects', icon: FolderKanban },
   { title: 'Tasks', url: '/tasks', icon: CheckSquare },
-<<<<<<< HEAD
-=======
   { title: 'Team', url: '/team', icon: Users },
   { title: 'Analytics', url: '/analytics', icon: BarChart3 },
->>>>>>> 1310239 (Added local VS Code project files)
   { title: 'Notifications', url: '/notifications', icon: Bell },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
-<<<<<<< HEAD
-  const { signOut } = useAuth();
-  const collapsed = state === 'collapsed';
-
-=======
   const { signOut, user } = useAuth();
   const collapsed = state === 'collapsed';
 
@@ -74,7 +59,7 @@ export function AppSidebar() {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
->>>>>>> 1310239 (Added local VS Code project files)
+
   return (
     <Sidebar className={collapsed ? 'w-16' : 'w-64'} collapsible="icon">
       <SidebarContent>
@@ -106,10 +91,6 @@ export function AppSidebar() {
                           : 'hover:bg-sidebar-accent/50'
                       }
                     >
-<<<<<<< HEAD
-                      <item.icon className="h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-=======
                       <div className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
                         {!collapsed && <span>{item.title}</span>}
@@ -119,7 +100,6 @@ export function AppSidebar() {
                           </Badge>
                         )}
                       </div>
->>>>>>> 1310239 (Added local VS Code project files)
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -127,8 +107,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-<<<<<<< HEAD
-=======
 
         <SidebarGroup>
           <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
@@ -153,7 +131,6 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
->>>>>>> 1310239 (Added local VS Code project files)
       </SidebarContent>
 
       <SidebarFooter>

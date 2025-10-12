@@ -6,10 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Chatbot } from '@/components/chat/Chatbot';
-<<<<<<< HEAD
-=======
 import { KeyboardShortcuts } from '@/components/KeyboardShortcuts';
->>>>>>> 1310239 (Added local VS Code project files)
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -57,10 +54,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="p-6">{children}</div>
         </main>
         <Chatbot />
-<<<<<<< HEAD
-=======
         <KeyboardShortcuts />
->>>>>>> 1310239 (Added local VS Code project files)
       </div>
     </SidebarProvider>
   );

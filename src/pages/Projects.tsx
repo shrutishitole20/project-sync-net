@@ -14,12 +14,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-<<<<<<< HEAD
-import { Plus, RefreshCcw } from 'lucide-react';
-=======
 import { Plus, RefreshCcw, FileText } from 'lucide-react';
 import { ProjectTemplateSelector } from '@/components/ProjectTemplateSelector';
->>>>>>> 1310239 (Added local VS Code project files)
 import type { Enums, Tables } from '@/integrations/supabase/types';
 
 const statusVariants: Record<Enums<'project_status'>, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -108,8 +104,6 @@ export default function Projects() {
     refetch();
   };
 
-<<<<<<< HEAD
-=======
   const createProjectFromTemplate = async (template: any) => {
     try {
       // Create the project
@@ -159,7 +153,6 @@ export default function Projects() {
     }
   };
 
->>>>>>> 1310239 (Added local VS Code project files)
   const updateProject = async (id: string, updates: Partial<Tables<'projects'>>) => {
     const { error } = await supabase.from('projects').update(updates).eq('id', id);
     if (error) toast.error(error.message);
@@ -198,14 +191,11 @@ export default function Projects() {
             <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
               <RefreshCcw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
             </Button>
-<<<<<<< HEAD
-=======
             <ProjectTemplateSelector onTemplateSelect={createProjectFromTemplate}>
               <Button variant="outline">
                 <FileText className="mr-2 h-4 w-4" /> From Template
               </Button>
             </ProjectTemplateSelector>
->>>>>>> 1310239 (Added local VS Code project files)
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button>
@@ -241,7 +231,7 @@ export default function Projects() {
                           <SelectItem value="planning">Planning</SelectItem>
                           <SelectItem value="active">Active</SelectItem>
                           <SelectItem value="on_hold">On Hold</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="on_completed">Completed</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

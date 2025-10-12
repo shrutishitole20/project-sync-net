@@ -19,30 +19,6 @@ export default function Dashboard() {
     const fetchStats = async () => {
       if (!user) return;
 
-<<<<<<< HEAD
-      // Fetch projects
-      const { count: projectCount } = await supabase
-        .from('projects')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch tasks
-      const { data: tasks } = await supabase
-        .from('tasks')
-        .select('status, due_date');
-
-      const activeTasks = tasks?.filter(t => t.status !== 'done').length || 0;
-      const completedTasks = tasks?.filter(t => t.status === 'done').length || 0;
-      const overdueTasks = tasks?.filter(
-        t => t.status !== 'done' && t.due_date && new Date(t.due_date) < new Date()
-      ).length || 0;
-
-      setStats({
-        totalProjects: projectCount || 0,
-        activeTasks,
-        completedTasks,
-        overdueTasks,
-      });
-=======
       try {
         // Fetch projects
         const { count: projectCount } = await supabase
@@ -69,7 +45,6 @@ export default function Dashboard() {
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
       }
->>>>>>> 1310239 (Added local VS Code project files)
     };
 
     fetchStats();
