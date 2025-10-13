@@ -7,15 +7,12 @@ export async function createNotification(
   message: string,
   type: string
 ) {
-  const { error } = await supabase
-    .from('notifications')
-    .insert({
-      user_id: userId,
-      title,
-      message,
-      type,
-      read: false,
-    });
+  const { data, error } = await supabase.rpc('create_notification', {
+    _user_id: userId,
+    _title: title,
+    _message: message,
+    _type: type,
+  });
 
   if (error) {
     console.error('Failed to create notification:', error);
