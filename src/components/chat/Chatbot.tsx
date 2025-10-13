@@ -29,6 +29,7 @@ export function Chatbot() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [lastRequest, setLastRequest] = useState<number>(0);
   const [messages, setMessages] = useState<ChatMessage[]>([{
     id: 'welcome', role: 'assistant', ts: Date.now(),
     content: 'Hi! Ask me about your projects and tasks. Type "help" to see commands.'
@@ -78,18 +79,59 @@ export function Chatbot() {
     return `Created project "${title}"${deadline ? ` (due ${new Date(deadline).toLocaleDateString()})` : ''}.`;
   };
 
+  // Security: Escape wildcards in user input to prevent filter injection
+  const escapeWildcards = (input: string): string => {
+    return input.replace(/[%_]/g, '\\$&');
+  };
+
   const handleSetStatus = async (title: string, status: Enums<'project_status'>) => {
-    const { error, count } = await supabase.from('projects').update({ status }).ilike('title', title).select('*', { count: 'exact' });
+    const sanitizedTitle = escapeWildcards(title.trim());
+    
+    // Validate title length
+    if (sanitizedTitle.length === 0 || sanitizedTitle.length > 200) {
+      return 'Project title must be between 1 and 200 characters.';
+    }
+    
+    const { error, count } = await supabase
+      .from('projects')
+      .update({ status })
+      .ilike('title', sanitizedTitle)
+      .select('*', { count: 'exact' });
+    
     if (error) throw error;
-    if (!count) return `No project found matching "${title}".`;
+    if (!count) return `No project found matching "${sanitizedTitle}".`;
+    
+    // Warn if multiple matches
+    if (count > 1) {
+      return `Warning: Updated ${count} projects matching "${sanitizedTitle}". Consider using more specific titles.`;
+    }
+    
     return `Updated status of ${count} project(s) to ${status}.`;
   };
 
   const handleSetProgress = async (title: string, progress: number) => {
+    const sanitizedTitle = escapeWildcards(title.trim());
+    
+    // Validate title length
+    if (sanitizedTitle.length === 0 || sanitizedTitle.length > 200) {
+      return 'Project title must be between 1 and 200 characters.';
+    }
+    
     const clamped = Math.max(0, Math.min(100, Math.round(progress)));
-    const { error, count } = await supabase.from('projects').update({ progress: clamped }).ilike('title', title).select('*', { count: 'exact' });
+    const { error, count } = await supabase
+      .from('projects')
+      .update({ progress: clamped })
+      .ilike('title', sanitizedTitle)
+      .select('*', { count: 'exact' });
+    
     if (error) throw error;
-    if (!count) return `No project found matching "${title}".`;
+    if (!count) return `No project found matching "${sanitizedTitle}".`;
+    
+    // Warn if multiple matches
+    if (count > 1) {
+      return `Warning: Updated ${count} projects matching "${sanitizedTitle}". Consider using more specific titles.`;
+    }
+    
     return `Updated progress of ${count} project(s) to ${clamped}%.`;
   };
 
@@ -108,7 +150,11 @@ export function Chatbot() {
 
   const process = async (text: string) => {
     const q = text.trim();
+    
+    // Security: Validate input length
     if (!q) return 'Please type something.';
+    if (q.length > 500) return 'Message too long. Please keep messages under 500 characters.';
+    
     if (!user) return 'Please sign in to use the assistant.';
     if (!envReady) return 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.';
 
@@ -139,6 +185,15 @@ export function Chatbot() {
   const onSend = async () => {
     const text = input;
     if (!text.trim() || busy) return;
+    
+    // Security: Rate limiting - prevent spam/abuse
+    const now = Date.now();
+    if (now - lastRequest < 1000) {
+      toast.error('Please wait before sending another message');
+      return;
+    }
+    setLastRequest(now);
+    
     append('user', text);
     setInput('');
     setBusy(true);

@@ -68,13 +68,27 @@ export default function Team() {
   };
 
   const inviteUser = async () => {
-    if (!email.trim()) {
+    const trimmedEmail = email.trim().toLowerCase();
+    
+    // Security: Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail) {
       toast.error('Email is required');
+      return;
+    }
+    
+    if (!emailRegex.test(trimmedEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    if (trimmedEmail.length > 255) {
+      toast.error('Email address is too long');
       return;
     }
 
     // Check if user already exists
-    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email);
+    const { data: existingUser } = await supabase.auth.admin.getUserByEmail(trimmedEmail);
     
     if (existingUser.user) {
       // User exists, assign role
@@ -93,7 +107,7 @@ export default function Team() {
       toast.success('Role assigned successfully');
     } else {
       // User doesn't exist, send invitation
-      const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
+      const { error } = await supabase.auth.admin.inviteUserByEmail(trimmedEmail, {
         data: { role: role }
       });
       
