@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Upload, File, X, Download, Image, FileText, Archive } from 'lucide-react';
 
@@ -47,6 +48,7 @@ export function FileUpload({
   maxFiles = 10, 
   maxSize = 10 
 }: FileUploadProps) {
+  const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -91,9 +93,9 @@ export function FileUpload({
             entity_id: entityId,
             file_name: file.name,
             file_size: file.size,
-            file_type: file.type,
-            file_url: urlData.publicUrl,
-            storage_path: fileName,
+            file_path: fileName,
+            mime_type: file.type,
+            uploaded_by: user?.id!,
           });
 
         if (dbError) {
@@ -158,7 +160,7 @@ export function FileUpload({
       const { error: dbError } = await supabase
         .from('file_attachments')
         .delete()
-        .eq('storage_path', fileName);
+        .eq('file_path', fileName);
 
       if (dbError) {
         toast.error('Failed to delete file record');

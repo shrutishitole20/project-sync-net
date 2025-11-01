@@ -66,15 +66,15 @@ export function Chatbot() {
 
   const handleCreateProject = async (title: string, deadline: string | null) => {
     if (!title) return 'Please provide a project title.';
-    const payload: Partial<Tables<'projects'>> = {
+    const payload = {
       title,
-      description: null,
+      description: null as string | null,
       deadline: deadline,
       manager_id: user?.id ?? null,
       progress: 0,
       status: 'planning' as Enums<'project_status'>,
     };
-    const { error } = await supabase.from('projects').insert(payload);
+    const { error } = await supabase.from('projects').insert([payload]);
     if (error) throw error;
     return `Created project "${title}"${deadline ? ` (due ${new Date(deadline).toLocaleDateString()})` : ''}.`;
   };
@@ -92,13 +92,14 @@ export function Chatbot() {
       return 'Project title must be between 1 and 200 characters.';
     }
     
-    const { error, count } = await supabase
+    const { data, error } = await supabase
       .from('projects')
       .update({ status })
       .ilike('title', sanitizedTitle)
-      .select('*', { count: 'exact' });
+      .select('*');
     
     if (error) throw error;
+    const count = data?.length || 0;
     if (!count) return `No project found matching "${sanitizedTitle}".`;
     
     // Warn if multiple matches
@@ -118,13 +119,14 @@ export function Chatbot() {
     }
     
     const clamped = Math.max(0, Math.min(100, Math.round(progress)));
-    const { error, count } = await supabase
+    const { data, error } = await supabase
       .from('projects')
       .update({ progress: clamped })
       .ilike('title', sanitizedTitle)
-      .select('*', { count: 'exact' });
+      .select('*');
     
     if (error) throw error;
+    const count = data?.length || 0;
     if (!count) return `No project found matching "${sanitizedTitle}".`;
     
     // Warn if multiple matches

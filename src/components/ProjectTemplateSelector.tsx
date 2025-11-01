@@ -50,7 +50,6 @@ export function ProjectTemplateSelector({ onTemplateSelect, children }: ProjectT
       const { data, error } = await supabase
         .from('project_templates')
         .select('*')
-        .eq('is_public', true)
         .order('name');
 
       if (error) throw error;

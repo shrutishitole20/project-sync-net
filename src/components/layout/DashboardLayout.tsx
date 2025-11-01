@@ -15,7 +15,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation() as { state?: { justSignedIn?: boolean } } & Location;
+  const location = useLocation();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -24,7 +24,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    if (user && location.state?.justSignedIn) {
+    if (user && (location.state as any)?.justSignedIn) {
       const name = (user.user_metadata as any)?.full_name || user.email || 'there';
       toast.success(`Welcome, ${name}!`);
       navigate(location.pathname, { replace: true, state: {} });

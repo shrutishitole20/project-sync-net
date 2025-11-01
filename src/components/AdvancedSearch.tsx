@@ -108,10 +108,10 @@ export function AdvancedSearch({ children, onResultSelect }: AdvancedSearchProps
           .or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
 
         if (filters.status) {
-          taskQuery = taskQuery.eq('status', filters.status);
+          taskQuery = taskQuery.eq('status', filters.status as any);
         }
         if (filters.priority) {
-          taskQuery = taskQuery.eq('priority', filters.priority);
+          taskQuery = taskQuery.eq('priority', filters.priority as any);
         }
         if (filters.assignee) {
           taskQuery = taskQuery.eq('assigned_to', filters.assignee);
@@ -138,7 +138,7 @@ export function AdvancedSearch({ children, onResultSelect }: AdvancedSearchProps
           .or(`title.ilike.%${filters.query}%,description.ilike.%${filters.query}%`);
 
         if (filters.status) {
-          projectQuery = projectQuery.eq('status', filters.status);
+          projectQuery = projectQuery.eq('status', filters.status as any);
         }
 
         const { data: projects, error: projectsError } = await projectQuery;

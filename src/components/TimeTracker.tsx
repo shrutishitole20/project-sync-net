@@ -25,10 +25,8 @@ interface TimeEntry {
   start_time: string;
   end_time: string | null;
   duration_minutes: number | null;
-  is_billable: boolean;
-  hourly_rate: number | null;
   user_id: string;
-  profiles: {
+  profiles?: {
     full_name: string;
   };
 }
@@ -47,15 +45,27 @@ export function TimeTracker({ taskId, taskTitle }: TimeTrackerProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('time_entries')
-        .select(`
-          *,
-          profiles:user_id(full_name)
-        `)
+        .select('*')
         .eq('task_id', taskId)
         .order('start_time', { ascending: false });
 
       if (error) throw error;
-      return data as TimeEntry[];
+      
+      // Fetch profiles separately
+      const userIds = [...new Set(data.map(e => e.user_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]));
+      
+      return data.map(entry => ({
+        ...entry,
+        profiles: profilesMap.get(entry.user_id) ? {
+          full_name: profilesMap.get(entry.user_id)!.full_name
+        } : undefined
+      })) as TimeEntry[];
     },
   });
 
@@ -115,7 +125,6 @@ export function TimeTracker({ taskId, taskTitle }: TimeTrackerProps) {
         user_id: user?.id!,
         description: description.trim(),
         start_time: new Date().toISOString(),
-        is_billable: true,
       })
       .select()
       .single();
@@ -180,9 +189,7 @@ export function TimeTracker({ taskId, taskTitle }: TimeTrackerProps) {
     return total + (entry.duration_minutes || 0);
   }, 0) || 0;
 
-  const totalBillableTime = timeEntries?.reduce((total, entry) => {
-    return entry.is_billable ? total + (entry.duration_minutes || 0) : total;
-  }, 0) || 0;
+  const totalBillableTime = totalTime; // All time is billable by default
 
   return (
     <div className="space-y-4">
@@ -260,12 +267,6 @@ export function TimeTracker({ taskId, taskTitle }: TimeTrackerProps) {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{entry.description}</p>
-                        {entry.is_billable && (
-                          <Badge variant="outline" className="text-xs">
-                            <DollarSign className="h-3 w-3 mr-1" />
-                            Billable
-                          </Badge>
-                        )}
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                         <div className="flex items-center gap-1">
@@ -287,11 +288,6 @@ export function TimeTracker({ taskId, taskTitle }: TimeTrackerProps) {
                       <div className="font-bold">
                         {entry.duration_minutes ? formatDuration(entry.duration_minutes) : 'Running...'}
                       </div>
-                      {entry.hourly_rate && (
-                        <div className="text-sm text-muted-foreground">
-                          ${entry.hourly_rate}/hr
-                        </div>
-                      )}
                     </div>
                   </div>
                 ))

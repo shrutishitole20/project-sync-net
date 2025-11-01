@@ -79,14 +79,29 @@ export function TeamChat({ children }: TeamChatProps) {
       const { data, error } = await supabase
         .from('chat_messages')
         .select(`
-          *,
-          profiles:user_id(full_name, avatar_url)
+          *
         `)
         .eq('channel_id', selectedChannel)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data as ChatMessage[];
+      
+      // Fetch profiles separately
+      const userIds = [...new Set(data.map(m => m.user_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', userIds);
+      
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]));
+      
+      return data.map(msg => ({
+        ...msg,
+        profiles: {
+          full_name: profilesMap.get(msg.user_id)?.full_name || 'Unknown',
+          avatar_url: profilesMap.get(msg.user_id)?.avatar_url || null,
+        }
+      })) as ChatMessage[];
     },
     enabled: !!selectedChannel,
   });
