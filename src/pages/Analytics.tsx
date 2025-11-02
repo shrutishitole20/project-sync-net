@@ -252,7 +252,7 @@ export default function Analytics() {
 
         {/* Key Metrics */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
@@ -262,45 +262,55 @@ export default function Analytics() {
               <p className="text-xs text-muted-foreground">
                 {filteredTasks.length} in selected period
               </p>
+              <Progress value={100} className="mt-2 h-1" />
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{Math.round(completionRate)}%</div>
+              <div className="text-2xl font-bold text-green-600">{Math.round(completionRate)}%</div>
               <p className="text-xs text-muted-foreground">
                 {completedTasks} of {totalTasks} completed
               </p>
+              <Progress value={completionRate} className="mt-2 h-1" />
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Overdue Tasks</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <AlertTriangle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{overdueTasks}</div>
               <p className="text-xs text-muted-foreground">
                 Need immediate attention
               </p>
+              {overdueTasks > 0 && (
+                <Badge variant="destructive" className="mt-2">Action Required</Badge>
+              )}
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Upcoming Deadlines</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Calendar className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">{upcomingDeadlines}</div>
               <p className="text-xs text-muted-foreground">
                 Due within 7 days
               </p>
+              {upcomingDeadlines > 0 && (
+                <Badge variant="outline" className="mt-2 text-orange-600 border-orange-600">
+                  Plan Ahead
+                </Badge>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -315,35 +325,42 @@ export default function Analytics() {
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <Card>
+              <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle>Task Status Distribution</CardTitle>
                   <CardDescription>Current status of all tasks</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={getTaskStatusData()}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {getTaskStatusData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {totalTasks === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground">
+                      <Activity className="h-12 w-12 mb-2 opacity-20" />
+                      <p>No tasks to display</p>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={getTaskStatusData()}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => percent > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {getTaskStatusData().map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle>Priority Distribution</CardTitle>
                   <CardDescription>Task priorities breakdown</CardDescription>
@@ -355,7 +372,11 @@ export default function Analytics() {
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip />
-                      <Bar dataKey="value" fill="#8884d8" />
+                      <Bar dataKey="value">
+                        {getPriorityData().map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -364,90 +385,125 @@ export default function Analytics() {
           </TabsContent>
 
           <TabsContent value="projects" className="space-y-4">
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle>Project Progress</CardTitle>
                 <CardDescription>Progress and task counts for each project</CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={getProjectProgressData()}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="progress" fill="#8884d8" name="Progress %" />
-                    <Bar dataKey="tasks" fill="#82ca9d" name="Total Tasks" />
-                    <Bar dataKey="completed" fill="#ffc658" name="Completed Tasks" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {!projects || projects.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
+                    <Target className="h-12 w-12 mb-2 opacity-20" />
+                    <p>No projects to analyze</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <BarChart data={getProjectProgressData()}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="progress" fill="#8884d8" name="Progress %" />
+                      <Bar dataKey="tasks" fill="#82ca9d" name="Total Tasks" />
+                      <Bar dataKey="completed" fill="#ffc658" name="Completed Tasks" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="team" className="space-y-4">
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle>Team Productivity</CardTitle>
                 <CardDescription>Task completion rates by team member</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {getTeamProductivityData().map((member, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Users className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{member.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {member.completed} of {member.total} tasks completed
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold">{Math.round(member.productivity)}%</div>
-                        <Progress value={member.productivity} className="w-20" />
-                      </div>
+                  {getTeamProductivityData().length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                      <p>No team productivity data available</p>
                     </div>
-                  ))}
+                  ) : (
+                    getTeamProductivityData().map((member, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Users className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{member.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {member.completed} of {member.total} tasks completed
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="text-lg font-bold">{Math.round(member.productivity)}%</div>
+                            <Progress value={member.productivity} className="w-24 h-2" />
+                          </div>
+                          {member.productivity >= 80 && (
+                            <Badge variant="default" className="bg-green-500">
+                              <TrendingUp className="h-3 w-3 mr-1" />
+                              High
+                            </Badge>
+                          )}
+                          {member.productivity < 50 && member.total > 0 && (
+                            <Badge variant="outline" className="text-orange-500">
+                              <TrendingDown className="h-3 w-3 mr-1" />
+                              Low
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="trends" className="space-y-4">
-            <Card>
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <CardTitle>Task Trends</CardTitle>
                 <CardDescription>Task creation and completion over time</CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={400}>
-                  <AreaChart data={getTaskTrendData()}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Area 
-                      type="monotone" 
-                      dataKey="created" 
-                      stackId="1" 
-                      stroke="#8884d8" 
-                      fill="#8884d8" 
-                      name="Tasks Created"
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="completed" 
-                      stackId="2" 
-                      stroke="#82ca9d" 
-                      fill="#82ca9d" 
-                      name="Tasks Completed"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {!tasks || tasks.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">
+                    <Activity className="h-12 w-12 mb-2 opacity-20" />
+                    <p>No trend data available</p>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <AreaChart data={getTaskTrendData()}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Area 
+                        type="monotone" 
+                        dataKey="created" 
+                        stackId="1" 
+                        stroke="#8884d8" 
+                        fill="#8884d8" 
+                        name="Tasks Created"
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="completed" 
+                        stackId="2" 
+                        stroke="#82ca9d" 
+                        fill="#82ca9d" 
+                        name="Tasks Completed"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
