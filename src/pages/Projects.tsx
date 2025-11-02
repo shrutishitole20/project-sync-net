@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, RefreshCcw, FileText } from 'lucide-react';
+import { Plus, RefreshCcw, FileText, Users, UserPlus, X } from 'lucide-react';
 import { ProjectTemplateSelector } from '@/components/ProjectTemplateSelector';
 import type { Enums, Tables } from '@/integrations/supabase/types';
 
@@ -41,10 +42,29 @@ export default function Projects() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('projects')
-        .select('*')
+        .select(`
+          *,
+          project_members(
+            user_id,
+            profiles:user_id(id, full_name, avatar_url)
+          )
+        `)
         .order('updated_at', { ascending: false });
       if (error) throw error;
-      return data as Tables<'projects'>[];
+      return data;
+    },
+    enabled: envReady && !!user,
+  });
+
+  const { data: profiles } = useQuery({
+    queryKey: ['profiles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('full_name');
+      if (error) throw error;
+      return data as Tables<'profiles'>[];
     },
     enabled: envReady && !!user,
   });
@@ -158,6 +178,44 @@ export default function Projects() {
     if (error) toast.error(error.message);
   };
 
+  const addProjectMember = async (projectId: string, userId: string) => {
+    const { error } = await supabase
+      .from('project_members')
+      .insert({ project_id: projectId, user_id: userId });
+    
+    if (error) {
+      if (error.code === '23505') {
+        toast.error('Member already added to project');
+      } else {
+        toast.error('Failed to add member');
+      }
+      return;
+    }
+    
+    toast.success('Member added to project');
+    refetch();
+  };
+
+  const removeProjectMember = async (projectId: string, userId: string) => {
+    const { error } = await supabase
+      .from('project_members')
+      .delete()
+      .eq('project_id', projectId)
+      .eq('user_id', userId);
+    
+    if (error) {
+      toast.error('Failed to remove member');
+      return;
+    }
+    
+    toast.success('Member removed from project');
+    refetch();
+  };
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
   if (!envReady) {
     return (
       <DashboardLayout>
@@ -257,61 +315,149 @@ export default function Projects() {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((p) => (
-              <Card key={p.id} className="hover:shadow-md transition-smooth">
-                <CardHeader className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{p.title}</CardTitle>
-                    <Badge variant={statusVariants[p.status].variant}>{statusVariants[p.status].label}</Badge>
-                  </div>
-                  {p.description && (
-                    <CardDescription className="line-clamp-2">{p.description}</CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between text-sm mb-2">
-                      <span>Progress</span>
-                      <span className="text-muted-foreground">{p.progress}%</span>
+            {projects.map((p: any) => {
+              const projectMembers = p.project_members || [];
+              const memberIds = projectMembers.map((pm: any) => pm.user_id);
+              const availableProfiles = profiles?.filter(prof => !memberIds.includes(prof.id)) || [];
+              
+              return (
+                <Card key={p.id} className="hover:shadow-md transition-smooth">
+                  <CardHeader className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{p.title}</CardTitle>
+                      <Badge variant={statusVariants[p.status].variant}>{statusVariants[p.status].label}</Badge>
                     </div>
-                    <Progress value={p.progress} />
-                  </div>
+                    {p.description && (
+                      <CardDescription className="line-clamp-2">{p.description}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span>Progress</span>
+                        <span className="text-muted-foreground">{p.progress}%</span>
+                      </div>
+                      <Progress value={p.progress} />
+                    </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Status</Label>
-                      <Select
-                        defaultValue={p.status}
-                        onValueChange={(v) => updateProject(p.id, { status: v as any })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="planning">Planning</SelectItem>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="on_hold">On Hold</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Status</Label>
+                        <Select
+                          defaultValue={p.status}
+                          onValueChange={(v) => updateProject(p.id, { status: v as any })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="planning">Planning</SelectItem>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="on_hold">On Hold</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Progress</Label>
+                        <Slider
+                          defaultValue={[p.progress]}
+                          max={100}
+                          step={5}
+                          onValueCommit={(val) => updateProject(p.id, { progress: val[0] })}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Progress</Label>
-                      <Slider
-                        defaultValue={[p.progress]}
-                        max={100}
-                        step={5}
-                        onValueCommit={(val) => updateProject(p.id, { progress: val[0] })}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="text-xs text-muted-foreground">
-                    {p.deadline ? `Due ${new Date(p.deadline).toLocaleDateString()}` : 'No deadline'}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          Team Members ({projectMembers.length})
+                        </Label>
+                        {availableProfiles.length > 0 && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 px-2">
+                                <UserPlus className="h-3 w-3" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md">
+                              <DialogHeader>
+                                <DialogTitle>Add Team Member</DialogTitle>
+                                <DialogDescription>
+                                  Select a team member to add to this project
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                                {availableProfiles.map((profile) => (
+                                  <div
+                                    key={profile.id}
+                                    className="flex items-center justify-between p-2 hover:bg-muted rounded-lg cursor-pointer"
+                                    onClick={() => addProjectMember(p.id, profile.id)}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Avatar className="h-8 w-8">
+                                        <AvatarImage src={profile.avatar_url || ''} />
+                                        <AvatarFallback className="text-xs">
+                                          {getInitials(profile.full_name)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <span className="text-sm">{profile.full_name}</span>
+                                    </div>
+                                    <Button variant="ghost" size="sm">Add</Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-1">
+                        {projectMembers.length === 0 ? (
+                          <span className="text-xs text-muted-foreground">No members assigned</span>
+                        ) : (
+                          projectMembers.map((pm: any) => {
+                            const profile = pm.profiles;
+                            if (!profile) return null;
+                            
+                            return (
+                              <div
+                                key={pm.user_id}
+                                className="group relative"
+                              >
+                                <Avatar className="h-7 w-7 border-2 border-background">
+                                  <AvatarImage src={profile.avatar_url || ''} />
+                                  <AvatarFallback className="text-xs">
+                                    {getInitials(profile.full_name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-md">
+                                  {profile.full_name}
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute -top-1 -right-1 h-4 w-4 p-0 opacity-0 group-hover:opacity-100 bg-destructive text-destructive-foreground rounded-full"
+                                  onClick={() => removeProjectMember(p.id, pm.user_id)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground">
+                      {p.deadline ? `Due ${new Date(p.deadline).toLocaleDateString()}` : 'No deadline'}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
