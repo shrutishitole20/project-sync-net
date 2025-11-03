@@ -30,8 +30,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdvancedSearch } from '@/components/AdvancedSearch';
 import { TeamChat } from '@/components/TeamChat';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Settings, Shield } from 'lucide-react';
 
-const navigation = [
+const baseNavigation = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
   { title: 'Projects', url: '/projects', icon: FolderKanban },
   { title: 'Tasks', url: '/tasks', icon: CheckSquare },
@@ -40,10 +42,18 @@ const navigation = [
   { title: 'Notifications', url: '/notifications', icon: Bell },
 ];
 
+const adminNavigation = [
+  { title: 'Admin', url: '/admin', icon: Shield },
+  { title: 'Settings', url: '/settings', icon: Settings },
+];
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const { signOut, user } = useAuth();
+  const { isAdmin } = useUserRole(user?.id);
   const collapsed = state === 'collapsed';
+
+  const navigation = isAdmin ? [...baseNavigation, ...adminNavigation] : baseNavigation;
 
   const { data: unreadNotifications } = useQuery({
     queryKey: ['unread-notifications'],

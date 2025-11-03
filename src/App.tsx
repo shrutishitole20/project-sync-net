@@ -11,6 +11,8 @@ import Tasks from "./pages/Tasks";
 import Notifications from "./pages/Notifications";
 import Team from "./pages/Team";
 import Analytics from "./pages/Analytics";
+import Admin from "./pages/Admin";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ const App = () => (
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/team" element={<Team />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
