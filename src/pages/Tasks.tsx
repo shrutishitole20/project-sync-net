@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,11 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Calendar, CheckSquare, Square, Trash2, Edit } from 'lucide-react';
+import { Plus, Calendar, CheckSquare, Square, Trash2, Edit, Search, LayoutGrid, LayoutList } from 'lucide-react';
 import type { Enums, Tables } from '@/integrations/supabase/types';
 
 const statusColumns = [
@@ -40,6 +41,10 @@ export default function Tasks() {
   const [dueDate, setDueDate] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [projectFilter, setProjectFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'kanban' | 'timeline'>('kanban');
 
   const { data: projects } = useQuery({
     queryKey: ['projects'],
@@ -143,17 +148,42 @@ export default function Tasks() {
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
   const getInitials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase();
-  const getTasksByStatus = (status: Enums<'task_status'>) => (tasks || []).filter((t: any) => t.status === status);
+  
+  const filteredTasks = useMemo(() => {
+    if (!tasks) return [];
+    
+    return tasks.filter((t: any) => {
+      const matchesSearch = searchQuery === '' || 
+        t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesPriority = priorityFilter === 'all' || t.priority === priorityFilter;
+      const matchesProject = projectFilter === 'all' || t.project_id === projectFilter;
+      
+      return matchesSearch && matchesPriority && matchesProject;
+    });
+  }, [tasks, searchQuery, priorityFilter, projectFilter]);
+  
+  const getTasksByStatus = (status: Enums<'task_status'>) => filteredTasks.filter((t: any) => t.status === status);
+  
+  const sortedTimelineTasks = useMemo(() => {
+    return [...filteredTasks].sort((a: any, b: any) => {
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    });
+  }, [filteredTasks]);
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Tasks</h1>
-            <p className="text-muted-foreground">Manage tasks across all projects</p>
-          </div>
-          <div className="flex gap-2">
+        <div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Tasks</h1>
+              <p className="text-muted-foreground">Manage tasks across all projects</p>
+            </div>
+            <div className="flex gap-2">
             {selectedTasks.size > 0 && (
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{selectedTasks.size} selected</Badge>
@@ -257,9 +287,63 @@ export default function Tasks() {
           </div>
         </div>
 
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={projectFilter} onValueChange={setProjectFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by project" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Projects</SelectItem>
+              {projects?.map((project) => (
+                <SelectItem key={project.id} value={project.id}>{project.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === 'kanban' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('kanban')}
+            >
+              <LayoutGrid className="h-4 w-4 mr-2" />
+              Kanban
+            </Button>
+            <Button
+              variant={viewMode === 'timeline' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('timeline')}
+            >
+              <LayoutList className="h-4 w-4 mr-2" />
+              Timeline
+            </Button>
+          </div>
+        </div>
+      </div>
+
         {isLoading ? (
           <div className="text-muted-foreground">Loading tasks...</div>
-        ) : (
+        ) : viewMode === 'kanban' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {statusColumns.map((column) => {
               const columnTasks = getTasksByStatus(column.id as Enums<'task_status'>);
@@ -322,6 +406,67 @@ export default function Tasks() {
                 </div>
               );
             })}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {sortedTimelineTasks.map((task: any) => {
+              const isOverdue = task.due_date && new Date(task.due_date) < new Date();
+              const statusColor = task.status === 'done' ? 'bg-green-100 border-green-300' : 
+                                  task.status === 'in_progress' ? 'bg-blue-100 border-blue-300' :
+                                  task.status === 'review' ? 'bg-yellow-100 border-yellow-300' :
+                                  'bg-gray-100 border-gray-300';
+              
+              return (
+                <Card key={task.id} className={`hover:shadow-md transition-shadow ${statusColor} border-l-4`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-sm truncate">{task.title}</h4>
+                          <Badge className={`text-xs ${priorityColors[task.priority]}`}>{task.priority}</Badge>
+                          <Badge variant="outline" className="text-xs">{task.status.replace('_', ' ')}</Badge>
+                        </div>
+                        {task.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1 mb-2">{task.description}</p>
+                        )}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="font-medium">{(task.projects as any)?.title || 'Unknown'}</span>
+                          {task.assignee && (
+                            <div className="flex items-center gap-1">
+                              <Avatar className="h-4 w-4">
+                                <AvatarImage src={task.assignee.avatar_url || ''} />
+                                <AvatarFallback className="text-xs">{getInitials(task.assignee.full_name)}</AvatarFallback>
+                              </Avatar>
+                              <span>{task.assignee.full_name}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {task.due_date && (
+                          <div className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-red-600 font-semibold' : 'text-muted-foreground'}`}>
+                            <Calendar className="h-3 w-3" />
+                            <span>{formatDate(task.due_date)}</span>
+                            {isOverdue && <Badge variant="destructive" className="text-xs ml-1">Overdue</Badge>}
+                          </div>
+                        )}
+                        <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => toggleTaskSelection(task.id)}>
+                          {selectedTasks.has(task.id) ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            {sortedTimelineTasks.length === 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>No tasks found</CardTitle>
+                  <CardDescription>Try adjusting your search or filters.</CardDescription>
+                </CardHeader>
+              </Card>
+            )}
           </div>
         )}
       </div>

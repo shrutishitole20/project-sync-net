@@ -15,7 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, RefreshCcw, FileText, Users, UserPlus, X } from 'lucide-react';
+import { Plus, RefreshCcw, FileText, Users, UserPlus, X, Search } from 'lucide-react';
 import { ProjectTemplateSelector } from '@/components/ProjectTemplateSelector';
 import type { Enums, Tables } from '@/integrations/supabase/types';
 
@@ -34,6 +34,8 @@ export default function Projects() {
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState<string>('');
   const [status, setStatus] = useState<Enums<'project_status'>>('planning');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const envReady = useMemo(() => Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY), []);
 
@@ -216,6 +218,20 @@ export default function Projects() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+    
+    return projects.filter((p: any) => {
+      const matchesSearch = searchQuery === '' || 
+        p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [projects, searchQuery, statusFilter]);
+
   if (!envReady) {
     return (
       <DashboardLayout>
@@ -240,12 +256,13 @@ export default function Projects() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Projects</h1>
-            <p className="text-muted-foreground">Manage and track all your projects</p>
-          </div>
-          <div className="flex gap-2">
+        <div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Projects</h1>
+              <p className="text-muted-foreground">Manage and track all your projects</p>
+            </div>
+            <div className="flex gap-2">
             <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
               <RefreshCcw className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} /> Refresh
             </Button>
@@ -304,6 +321,31 @@ export default function Projects() {
           </div>
         </div>
 
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="planning">Planning</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="on_hold">On Hold</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
         {isLoading ? (
           <div className="text-muted-foreground">Loading projects...</div>
         ) : !projects || projects.length === 0 ? (
@@ -313,9 +355,16 @@ export default function Projects() {
               <CardDescription>Click "New Project" to create your first project.</CardDescription>
             </CardHeader>
           </Card>
+        ) : filteredProjects.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>No projects found</CardTitle>
+              <CardDescription>Try adjusting your search or filters.</CardDescription>
+            </CardHeader>
+          </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((p: any) => {
+            {filteredProjects.map((p: any) => {
               const projectMembers = p.project_members || [];
               const memberIds = projectMembers.map((pm: any) => pm.user_id);
               const availableProfiles = profiles?.filter(prof => !memberIds.includes(prof.id)) || [];
