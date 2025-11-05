@@ -178,44 +178,32 @@ export default function Tasks() {
     <DashboardLayout>
       <div className="space-y-6">
         <div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold">Tasks</h1>
               <p className="text-muted-foreground">Manage tasks across all projects</p>
             </div>
             <div className="flex gap-2">
-            {selectedTasks.size > 0 && (
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">{selectedTasks.size} selected</Badge>
-                <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('in_progress')}>
-                  <Edit className="h-4 w-4 mr-2" /> Mark In Progress
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('done')}>
-                  <CheckSquare className="h-4 w-4 mr-2" /> Mark Done
-                </Button>
-                <Button variant="outline" size="sm" onClick={bulkDeleteTasks} className="text-red-600 hover:text-red-700">
-                  <Trash2 className="h-4 w-4 mr-2" /> Delete
-                </Button>
-                <Button variant="ghost" size="sm" onClick={clearSelection}>Clear</Button>
-              </div>
-            )}
-            <Button variant="outline" onClick={selectedTasks.size === (tasks?.length || 0) ? clearSelection : selectAllTasks}>
-              {selectedTasks.size === (tasks?.length || 0) ? (
-                <>
-                  <Square className="mr-2 h-4 w-4" /> Deselect All
-                </>
-              ) : (
-                <>
-                  <CheckSquare className="mr-2 h-4 w-4" /> Select All
-                </>
-              )}
-            </Button>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" /> New Task
-                </Button>
-              </DialogTrigger>
+              <Button 
+                variant="outline" 
+                onClick={clearSelection}
+                disabled={selectedTasks.size === 0}
+              >
+                <Square className="mr-2 h-4 w-4" /> Deselect All
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={selectAllTasks}
+                disabled={!tasks || tasks.length === 0}
+              >
+                <CheckSquare className="mr-2 h-4 w-4" /> Select All
+              </Button>
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" /> New Task
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Create New Task</DialogTitle>
@@ -286,6 +274,21 @@ export default function Tasks() {
             </Dialog>
           </div>
         </div>
+          
+        {selectedTasks.size > 0 && (
+          <div className="flex items-center gap-2 p-4 bg-muted rounded-lg">
+            <Badge variant="secondary">{selectedTasks.size} task{selectedTasks.size > 1 ? 's' : ''} selected</Badge>
+            <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('in_progress')}>
+              <Edit className="h-4 w-4 mr-2" /> Mark In Progress
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => bulkUpdateStatus('done')}>
+              <CheckSquare className="h-4 w-4 mr-2" /> Mark Done
+            </Button>
+            <Button variant="destructive" size="sm" onClick={bulkDeleteTasks}>
+              <Trash2 className="h-4 w-4 mr-2" /> Delete
+            </Button>
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
